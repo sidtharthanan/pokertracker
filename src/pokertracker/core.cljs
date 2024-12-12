@@ -66,16 +66,16 @@
 
 (defn home-page []
   (let [{:keys [chipset no-of-players sample]} @gbl-state
-        tdata (map (fn [{:keys [denom color count per-player]}]
+        tdata (map (fn [{:keys [:denom :color :qty :per-player]}]
                      {:chip denom
                       :color color
-                      :total-qty count
-                      :total-val (* denom count)
+                      :total-qty qty
+                      :total-val (* denom qty)
                       :qty-per-player per-player
                       :val-per-player (* denom per-player)
                       :qty-used (* no-of-players per-player)
-                      :qty-left (- count (* no-of-players per-player))
-                      :val-left (* denom (- count (* no-of-players per-player)))}) chipset)
+                      :qty-left (- qty (* no-of-players per-player))
+                      :val-left (* denom (- qty (* no-of-players per-player)))}) chipset)
         ;; tfdata (reduce (fn [acc tr]
         ;;                  (assoc acc :total-qty :total-val :qty-per-player :val-per-player :qty-used :qty-left :val-left)) {} tdata)
         ]
@@ -98,7 +98,7 @@
        (map-indexed (fn [index {:keys [:color :chip :total-qty :total-val :qty-per-player :val-per-player :qty-used :qty-left :val-left]}]
                       [:tr {:key chip :style {:background color :color "white"}}
                        [:td {:style {:border "1px solid black" :width "5%"}} chip]
-                       [:td {:style {:border "1px solid black" :width "10%"}} (int-input chip [:chipset index :count] total-qty)]
+                       [:td {:style {:border "1px solid black" :width "10%"}} (int-input chip [:chipset index :qty] total-qty)]
                        [:td {:style {:border "1px solid black"}} total-val]
                        [:td {:style {:border "1px solid black"}} qty-per-player]
                        [:td {:style {:border "1px solid black"}} val-per-player]
