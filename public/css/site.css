@@ -56,3 +56,19 @@ a:hover {
 .config-table-input:focus {
   outline: none;
 }
+
+.row {
+  display: block;
+  float: left;
+  width: 100%;
+}
+
+.col-md5 {
+  display: block;
+  float: left;
+  width: 50%;
+}
+
+.game-setup-input {
+
+}

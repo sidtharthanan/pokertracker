@@ -9,4 +9,4 @@
                              :game-duration-secs (* 2 60 60)
                              :no-of-players 4
                              :start-blind 2
-                             :blind-multiplier 1.5})
+                             :blind-multiplier 50})
