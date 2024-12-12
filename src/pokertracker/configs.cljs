@@ -1,6 +1,6 @@
 (ns pokertracker.configs)
 
-(def ^:export default-state {:chipset [{:denom 1 :color "white" :count 40  :per-player 5}
+(def ^:export default-state {:chipset [{:denom 1 :color "#c0c0c0" :count 40  :per-player 5}
                                        {:denom 5 :color "red" :count 40  :per-player 4}
                                        {:denom 10 :color "green" :count 40  :per-player 4}
                                        {:denom 25 :color "blue" :count 40  :per-player 3}

@@ -32,3 +32,13 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+.config-table-cell::-webkit-inner-spin-button, 
+.config-table-cell::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+.config-table-cell:focus {
+  outline: none;
+}
