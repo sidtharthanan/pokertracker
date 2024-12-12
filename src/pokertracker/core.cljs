@@ -1,13 +1,14 @@
 (ns pokertracker.core
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
+            [clojure.edn :as edn]
             [clojure.string :as str]
             [pokertracker.configs :as defaults]))
 
 ;; -------------------------
 
 (defonce gbl-state (r/atom (or
-                            (.getItem (.-localStorage js/window) :gbl-state)
+                            (edn/read-string (.getItem (.-localStorage js/window) :gbl-state))
                             defaults/default-state)))
 
 (println @gbl-state)
@@ -20,6 +21,9 @@
 
 (defn update-gbl-state [[& path] value]
   (swap! gbl-state assoc-in path value))
+
+(defn persist-gbl-state []
+  (.setItem (.-localStorage js/window) :gbl-state (prn-str @gbl-state)))
 
 (defonce timer
   (r/atom (js/Date.)))
@@ -50,35 +54,24 @@
                            (.setItem (.-localStorage js/window) :color new-color)
                            (reset! time-color new-color)))}]])
 
-(defn int-input [id location value]
-  [:input.config-table-cell {:type "number"
-                             :id id
-                             :value value
-                             :on-change (fn [e] (update-gbl-state location (-> e (.-target) (.-value) int)))
-                             :style {:width "100%"
-                                     :font-size "1em"
-                                     :background-color "inherit"
-                                     :color "inherit"
-                                     :border "none"}}])
-
-(defn mul-map [[& fns] xs]
-  (reduce (fn [acc x] []) [] xs))
+(defn int-input [id value location]
+  [:input.config-table-input {:type "number"
+                              :id id
+                              :value value
+                              :on-change (fn [e] (update-gbl-state location (-> e (.-target) (.-value) int)))}])
 
 (defn home-page []
   (let [{:keys [chipset no-of-players sample]} @gbl-state
-        tdata (map (fn [{:keys [:denom :color :qty :per-player]}]
-                     {:chip denom
+        tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
+                     {:denom denom
                       :color color
                       :total-qty qty
                       :total-val (* denom qty)
-                      :qty-per-player per-player
-                      :val-per-player (* denom per-player)
-                      :qty-used (* no-of-players per-player)
-                      :qty-left (- qty (* no-of-players per-player))
-                      :val-left (* denom (- qty (* no-of-players per-player)))}) chipset)
-        ;; tfdata (reduce (fn [acc tr]
-        ;;                  (assoc acc :total-qty :total-val :qty-per-player :val-per-player :qty-used :qty-left :val-left)) {} tdata)
-        ]
+                      :qty-per-player qty-per-player
+                      :val-per-player (* denom qty-per-player)
+                      :qty-used (* no-of-players qty-per-player)
+                      :qty-left (- qty (* no-of-players qty-per-player))
+                      :val-left (* denom (- qty (* no-of-players qty-per-player)))}) chipset)]
     [:div
      [greeting "Hello world, it is now. Yeah"]
      [clock]
@@ -86,38 +79,36 @@
      [:table {:style {:width 800 :border "1px solid black"}}
       [:thead
        [:tr
-        [:th {:style {:border "1px solid black"}} "Denom"]
-        [:th {:style {:border "1px solid black"}} "Qty"]
-        [:th {:style {:border "1px solid black"}} "Denom * Qty"]
-        [:th {:style {:border "1px solid black"}} "Qty / Player"]
-        [:th {:style {:border "1px solid black"}} "Value / Player"]
-        [:th {:style {:border "1px solid black"}} "Qty Used"]
-        [:th {:style {:border "1px solid black"}} "Qty Left"]
-        [:th {:style {:border "1px solid black"}} "Value Left"]]]
+        [:th.config-table-cell "Denom"]
+        [:th.config-table-cell "Qty"]
+        [:th.config-table-cell "Chip Value"]
+        [:th.config-table-cell "Qty / Player"]
+        [:th.config-table-cell "Value / Player"]
+        [:th.config-table-cell "Qty Used"]
+        [:th.config-table-cell "Qty Left"]
+        [:th.config-table-cell "Value Left"]]]
       [:tbody
-       (map-indexed (fn [index {:keys [:color :chip :total-qty :total-val :qty-per-player :val-per-player :qty-used :qty-left :val-left]}]
-                      [:tr {:key chip :style {:background color :color "white"}}
-                       [:td {:style {:border "1px solid black" :width "5%"}} chip]
-                       [:td {:style {:border "1px solid black" :width "10%"}} (int-input chip [:chipset index :qty] total-qty)]
-                       [:td {:style {:border "1px solid black"}} total-val]
-                       [:td {:style {:border "1px solid black"}} qty-per-player]
-                       [:td {:style {:border "1px solid black"}} val-per-player]
-                       [:td {:style {:border "1px solid black"}} qty-used]
-                       [:td {:style {:border "1px solid black"}} qty-left]
-                       [:td {:style {:border "1px solid black"}} val-left]]) tdata)]
+       (map-indexed (fn [index {:keys [:color :denom :total-qty :total-val :qty-per-player :val-per-player :qty-used :qty-left :val-left]}]
+                      [:tr {:key denom :style {:background color :color "white"}}
+                       [:td.config-table-cell {:style {:width "5%"}} denom]
+                       [:td.config-table-cell {:style {:width "10%"}} (int-input denom total-qty [:chipset index :qty])]
+                       [:td.config-table-cell {:style {}} total-val]
+                       [:td.config-table-cell {:style {:width "15%"}} (int-input denom qty-per-player [:chipset index :qty-per-player])]
+                       [:td.config-table-cell {:style {}} val-per-player]
+                       [:td.config-table-cell {:style {}} qty-used]
+                       [:td.config-table-cell {:style {}} qty-left]
+                       [:td.config-table-cell {:style {}} val-left]]) tdata)]
       [:tfoot
        [:tr
-        [:td {:style {:border "1px solid black" :font-weight "bold"}} "Total"]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :total-qty tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :total-val tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :qty-per-player tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :val-per-player tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :qty-used tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :qty-left tdata))]
-        [:td {:style {:border "1px solid black"}} (reduce + 0 (map :val-left tdata))]]]]
-     (int-input 101 [:sample] sample)
-     [:input {:field :text :id :first-name}]
-     [:input {:field :numeric :id :age}]]))
+        [:td.config-table-cell {:style {:font-weight "bold"}} "Total"]
+        [:td.config-table-cell (reduce + (map :total-qty tdata))]
+        [:td.config-table-cell (reduce + (map :total-val tdata))]
+        [:td.config-table-cell (reduce + (map :qty-per-player tdata))]
+        [:td.config-table-cell (reduce + (map :val-per-player tdata))]
+        [:td.config-table-cell (reduce + (map :qty-used tdata))]
+        [:td.config-table-cell (reduce + (map :qty-left tdata))]
+        [:td.config-table-cell (reduce + (map :val-left tdata))]]]]
+     [:button {:on-click persist-gbl-state} "Save locally"]]))
 
 ;; -------------------------
 ;; Initialize app
