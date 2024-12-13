@@ -60,7 +60,11 @@
                       :val-per-player (* denom qty-per-player)
                       :qty-used (* no-of-players qty-per-player)
                       :qty-left (- qty (* no-of-players qty-per-player))
-                      :val-left (* denom (- qty (* no-of-players qty-per-player)))}) chipset)]
+                      :val-left (* denom (- qty (* no-of-players qty-per-player)))}) chipset)
+        tdata-total (->> [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]
+                         (map (fn [k] [k (reduce + (map k tdata))]))
+                         (into {}))
+        levels-needed (math/ceil (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0)))))]
     [:div
      [:h3 "Poker game tracker!"]
      (let [th (partial vector :th.config-table-cell)
@@ -91,26 +95,33 @@
                          (td val-left)]) tdata)]
         [:tfoot
          [:tr
-          (td {:style {:font-weight "bold"}} "Total")
-          (td (reduce + (map :qty tdata)))
-          (td (reduce + (map :qty-per-player tdata)))
-          (td {:style {:border "none"}})
-          (td (reduce + (map :val-per-player tdata)))
-          (td (reduce + (map :total-val tdata)))
-          (td (reduce + (map :qty-used tdata)))
-          (td (reduce + (map :qty-left tdata)))
-          (td (reduce + (map :val-left tdata)))]]])
+          (let [{:keys [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]} tdata-total]
+            (list
+             (td {:style {:font-weight "bold"}} "Total")
+             (td qty)
+             (td qty-per-player)
+             (td {:style {:border "none"}})
+             (td val-per-player)
+             (td total-val)
+             (td qty-used)
+             (td qty-left)
+             (td val-left)))]]])
      [:form {:style {:margin-top 10 :width 400}}
       [:div.row
-       [:div.col-md5 [:label {:for :start-blind} "Starting small blind"]]
+       [:div.col-md5 [:label {:for :start-blind} "Starting SB"]]
        [:div.col-md5 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
       [:div.row
-       [:div.col-md5 [:label {:for :blind-multiplier} "Small Blind Multiplier"]]
-       (println blind-multiplier)
+       [:div.col-md5 [:label {:for :blind-multiplier} "SB Inc percentage"]]
        [:div.col-md5 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
                                                                       :min 30
                                                                       :step 2
                                                                       :max 100})]]
+      [:div.row
+       [:div.col-md5 [:label {:for :starting-stack} "Starting Stack"]]
+       [:div.col-md5>span#starting-stack (:val-per-player tdata-total)]]
+      [:div.row
+       [:div.col-md5 [:label {:for :levels-needed} "Levels Needed"]]
+       [:div.col-md5>span#levels-needed levels-needed]]
       [:button {:type "submit" :on-click persist-gbl-state} "Save locally"]]]))
 
 (defn mount-root []
