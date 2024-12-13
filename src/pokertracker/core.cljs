@@ -29,13 +29,14 @@
   ([location val] (int-input location val {}))
   ([location val attrs]
    (let [on-change #(swap! gbl-state assoc-in location %1)]
-     [:input (assoc attrs
-                    :id location
+     [:input (into {:id location
                     :type "number"
                     :value val
                     :min 0
                     :step 1
-                    :on-change #(on-change (-> %1 (.-target) (.-value) int)))])))
+                    :on-change #(on-change (-> %1 (.-target) (.-value) int))
+                    :style {:width "100%"}}
+                   attrs)])))
 
 ;; fmt #(-> % float (/ 5) math/round (* 5))
 
@@ -43,11 +44,12 @@
   ([location val] (num-input location val {}))
   ([location val attrs]
    (let [on-change #(swap! gbl-state assoc-in location %1)]
-     [:input (assoc attrs
-                    :id location
+     [:input (into {:id location
                     :type "number"
                     :value val
-                    :on-change #(on-change (-> %1 (.-target) (.-value) float)))])))
+                    :on-change #(on-change (-> %1 (.-target) (.-value) float))
+                    :style {:width "100%"}}
+                   attrs)])))
 
 (defn home-page []
   (let [{:keys [chipset no-of-players start-blind blind-multiplier]} @gbl-state
@@ -107,6 +109,12 @@
              (td qty-left)
              (td val-left)))]]])
      [:form {:style {:margin-top 10 :width 400}}
+      [:div.row
+       [:div.col-md5 [:label {:for :no-of-players} "No of Players"]]
+       [:div.col-md5 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
+                                                                :min 2
+                                                                :step 1
+                                                                :max 10})]]
       [:div.row
        [:div.col-md5 [:label {:for :start-blind} "Starting SB"]]
        [:div.col-md5 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
