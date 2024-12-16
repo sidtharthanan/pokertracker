@@ -52,7 +52,7 @@
                    attrs)])))
 
 (defn home-page []
-  (let [{:keys [chipset no-of-players start-blind blind-multiplier]} @gbl-state
+  (let [{:keys [chipset no-of-players start-blind blind-multiplier est-game-hours]} @gbl-state
         tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
                      {:denom denom
                       :color color
@@ -66,7 +66,8 @@
         tdata-total (->> [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]
                          (map (fn [k] [k (reduce + (map k tdata))]))
                          (into {}))
-        levels-needed (math/ceil (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0)))))]
+        levels-needed (math/ceil (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0)))))
+        est-blind-mins (math/ceil (/ (* est-game-hours 60) levels-needed))]
     [:div
      [:h3 "Poker game tracker!"]
      (let [th (partial vector :th.config-table-cell)
@@ -96,19 +97,18 @@
                          (td qty-left)
                          (td val-left)]) tdata)]
         [:tfoot
-         [:tr
-          (let [{:keys [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]} tdata-total]
-            (list
-             (td {:style {:font-weight "bold"}} "Total")
-             (td qty)
-             (td qty-per-player)
-             (td {:style {:border "none"}})
-             (td val-per-player)
-             (td total-val)
-             (td qty-used)
-             (td qty-left)
-             (td val-left)))]]])
-     [:form {:style {:margin-top 10 :width 400}}
+         (let [{:keys [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]} tdata-total]
+           [:tr
+            (td {:style {:font-weight "bold"}} "Total")
+            (td qty)
+            (td qty-per-player)
+            (td {:style {:border "none"}})
+            (td val-per-player)
+            (td total-val)
+            (td qty-used)
+            (td qty-left)
+            (td val-left)])]])
+     [:form {:style {:margin-top 10 :width 400} :disabled true}
       [:div.row
        [:div.col-md5 [:label {:for :no-of-players} "No of Players"]]
        [:div.col-md5 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
@@ -121,8 +121,8 @@
       [:div.row
        [:div.col-md5 [:label {:for :blind-multiplier} "SB Inc percentage"]]
        [:div.col-md5 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
-                                                                      :min 30
-                                                                      :step 2
+                                                                      :min 25
+                                                                      :step 5
                                                                       :max 100})]]
       [:div.row
        [:div.col-md5 [:label {:for :starting-stack} "Starting Stack"]]
@@ -130,6 +130,15 @@
       [:div.row
        [:div.col-md5 [:label {:for :levels-needed} "Levels Needed"]]
        [:div.col-md5>span#levels-needed levels-needed]]
+      [:div.row
+       [:div.col-md5 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
+       [:div.col-md5 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
+                                                                  :min 0.75
+                                                                  :step 0.25
+                                                                  :max 4.00})]]
+      [:div.row
+       [:div.col-md5 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
+       [:div.col-md5>span#est-blind-mins est-blind-mins]]
       [:button {:type "submit" :on-click persist-gbl-state} "Save locally"]]]))
 
 (defn mount-root []

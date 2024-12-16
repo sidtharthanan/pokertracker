@@ -6,7 +6,7 @@
                                        {:denom 25 :color "blue" :qty 40  :qty-per-player 3}
                                        {:denom 50 :color "black" :qty 40  :qty-per-player 2}]
                              
-                             :game-duration-secs (* 2 60 60)
+                             :est-game-hours 2
                              :no-of-players 4
                              :start-blind 2
                              :blind-multiplier 50})
