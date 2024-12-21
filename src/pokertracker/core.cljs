@@ -22,17 +22,17 @@
 (defonce gbl-state (r/atom (ls-read :gbl-state defaults/default-state)))
 (println @gbl-state)
 
-(def update-gbl-state-in #(swap! gbl-state assoc-in %1 %2))
+(def update-gbl-state-in! #(swap! gbl-state assoc-in %1 %2))
 (def reset-gbl-state #(reset! gbl-state defaults/default-state))
 
-(def persist-gbl-state #(ls-write :gbl-state @gbl-state))
+(def ls-write-gbl-state! #(ls-write :gbl-state @gbl-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn int-input
   ([location val] (int-input location val {}))
   ([location val attrs]
-   (let [on-change #(swap! gbl-state assoc-in location %1)]
+   (let [on-change #(update-gbl-state-in! location %1)]
      [:input (into {:id location
                     :type "number"
                     :value val
@@ -47,7 +47,7 @@
 (defn num-input
   ([location val] (num-input location val {}))
   ([location val attrs]
-   (let [on-change #(swap! gbl-state assoc-in location %1)]
+   (let [on-change #(update-gbl-state-in! location %1)]
      [:input (into {:id location
                     :type "number"
                     :value val
@@ -95,22 +95,18 @@
          (td qty-left)
          (td val-left)])]]))
 
-(defn- can-edit-config? []
-  (let [{game-state :game-state} @gbl-state]
-    (cond (= game-state 0) true ;; not started
-          (= game-state 1) false ;; started
-          (= game-state 2) false ;; started and paused
-          (= game-state 3) true))) ;; ended
-
 (defn- gm-start []
-  )
+  (update-gbl-state-in! [:game-state] :started)
+  (ls-write-gbl-state!))
 (defn- gm-pause []
-  )
+  (update-gbl-state-in! [:game-state] :paused)
+  (ls-write-gbl-state!))
 (defn- gm-end []
-  )
+  (update-gbl-state-in! [:game-state] :ended)
+  (ls-write-gbl-state!))
 
 (defn home-page []
-  (let [{:keys [chipset no-of-players start-blind blind-multiplier est-game-hours]} @gbl-state
+  (let [{:keys [chipset no-of-players start-blind blind-multiplier est-game-hours game-state]} @gbl-state
         tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
                      {:denom denom
                       :color color
@@ -125,49 +121,54 @@
                          (map (fn [k] [k (reduce + (map k tdata))]))
                          (into {}))
         levels-needed (math/ceil (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0)))))
-        est-blind-mins (math/ceil (/ (* est-game-hours 60) levels-needed))]
+        est-blind-mins (math/ceil (/ (* est-game-hours 60) levels-needed))
+        game-running (contains? #{:started :paused} (keyword game-state))]
     [:div
      [:h3 "Poker game tracker!"]
 
-     [:div.row {:style {:margin 15}}
-      [:div.row {:style {:width 400}}
-       [:div.col-md4>button.gm-button {:style {:background "#00ff00"} :on-click gm-start} "START"]
-       [:div.col-md4>button.gm-button {:style {:background "#4285f4"} :on-click gm-pause} "PAUSE"]
-       [:div.col-md4>button.gm-button {:style {:background "#ff0000"} :on-click gm-end} "END"]
-       ]]
+     [:div.row {:style {:margin 15 :width 400}}
+      [:div.col-md4>button.gm-button
+       {:style {:background-color (when-not game-running "#00ff00")} :on-click gm-start :disabled game-running}
+       "START"]
+           ;;  [:div.col-md4>button.gm-button {:style {:background "#4285f4"} :on-click gm-pause} "PAUSE"]
+      [:div.col-md4>button.gm-button
+       {:style {:background-color (when game-running "#ff0000")} :on-click gm-end :disabled (not game-running)}
+       "END"]]
 
-     (when (can-edit-config?) (game-setup-table tdata tdata-total))
-     [:form {:style {:margin-top 10 :width 400}}
-      [:div.row
-       [:div.col-md6 [:label {:for :no-of-players} "No of Players"]]
-       [:div.col-md6 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
-                                                                :min 2
-                                                                :step 1
-                                                                :max 10})]]
-      [:div.row
-       [:div.col-md6 [:label {:for :start-blind} "Starting SB"]]
-       [:div.col-md6 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
-      [:div.row
-       [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
-       [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
-                                                                      :min 25
-                                                                      :step 5
-                                                                      :max 100})]]
-      [:div.row
-       [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
-       [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
-      [:div.row
-       [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
-       [:div.col-md6>span#levels-needed levels-needed]]
-      [:div.row
-       [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
-       [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
-                                                                  :min 0.75
-                                                                  :step 0.25
-                                                                  :max 4.00})]]
-      [:div.row
-       [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
-       [:div.col-md6>span#est-blind-mins est-blind-mins]]]]))
+     (when-not game-running
+       [:div.row (game-setup-table tdata tdata-total)])
+     (when-not game-running
+       [:div.row {:style {:margin-top 10 :width 400}}
+        [:div.row
+         [:div.col-md6 [:label {:for :no-of-players} "No of Players"]]
+         [:div.col-md6 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
+                                                                  :min 2
+                                                                  :step 1
+                                                                  :max 10})]]
+        [:div.row
+         [:div.col-md6 [:label {:for :start-blind} "Starting SB"]]
+         [:div.col-md6 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
+        [:div.row
+         [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
+         [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
+                                                                        :min 25
+                                                                        :step 5
+                                                                        :max 100})]]
+        [:div.row
+         [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
+         [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
+        [:div.row
+         [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
+         [:div.col-md6>span#levels-needed levels-needed]]
+        [:div.row
+         [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
+         [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
+                                                                    :min 0.75
+                                                                    :step 0.25
+                                                                    :max 4.00})]]
+        [:div.row
+         [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
+         [:div.col-md6>span#est-blind-mins est-blind-mins]]])]))
 
 (defn mount-root []
   (rdom/render [home-page] (js/document.getElementById "app")))

@@ -106,3 +106,9 @@ a:hover {
   box-shadow: 0 5px #555;
   transform: translateY(4px);
 }
+
+:disabled.gm-button, :disabled.gm-button:hover, :disabled.gm-button:active {
+  cursor: not-allowed;
+  background-color: #b9b7b6;
+  box-shadow: none;
+}
