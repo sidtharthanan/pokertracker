@@ -166,23 +166,26 @@
         started-at (when-not (nil? game-start) (str (.getHours game-start) ":" (.getMinutes game-start)))]
     [:div
      [:div.row
-      [:div.col-md6
-       [:div.row [:span {:style {:font-size "1.5em" :font-weight "bold"}} "Poker game tracker! "]]
-       [:div.row [:span {:style {:font-size "0.8em" :font-weight "bold"}} "Started at " started-at]]]
-      [:div.col-md6 [:div.row
+      [:div.col-md4
+       [:div.row [:span {:style {:font-size 20 :font-weight "bold"}} "Poker game tracker! "]]
+       [:div.row [:span {:style {:font-size 14 :font-weight "bold"}} "Started at " started-at]]]
+      [:div.col-md3
+       [:div.row {:style {:padding "4px 10px"}}
+        [:div.col-md6 [:button.gm-button
+                       {:style {:background-color (when-not game-running "#00ff00")} :on-click gm-start :disabled game-running}
+                       "START"]]
+        [:div.col-md6 [:button.gm-button
+                       {:style {:background-color (when game-running "#ff0000")} :on-click gm-end :disabled (not game-running)}
+                       "END"]]]]
+      [:div.col-md4 [:div.row.right
+                     [:div.col-md8.right
+                      [:span {:style {:font-size 14 :font-weight "bold"}} "Small Blind "]
+                      [:span {:style {:font-size 26 :font-weight "bold"}} current-small-blind]]
                      [:div.col-md4.right
-                      [:span {:style {:font-size "1.5em" :font-weight "bold"}} (str "Small Blind " current-small-blind)]]
-                     [:div.col-md6.right
-                      [:span {:style {:font-size "1.5em" :font-weight "bold"}} (str "Level " current-level)]]]]]
+                      [:span {:style {:font-size 14 :font-weight "bold"}} "Level "]
+                      [:span {:style {:font-size 26 :font-weight "bold"}} current-level]]]]]
 
-     [:div.row {:style {:margin 15 :width 400}}
-      [:div.col-md4>button.gm-button
-       {:style {:background-color (when-not game-running "#00ff00")} :on-click gm-start :disabled game-running}
-       "START"]
-           ;;  [:div.col-md4>button.gm-button {:style {:background "#4285f4"} :on-click gm-pause} "PAUSE"]
-      [:div.col-md4>button.gm-button
-       {:style {:background-color (when game-running "#ff0000")} :on-click gm-end :disabled (not game-running)}
-       "END"]]
+
 
      (when-not game-running
        [:div.row (game-setup-table tdata tdata-total)])

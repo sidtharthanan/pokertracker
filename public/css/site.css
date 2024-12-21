@@ -58,8 +58,8 @@ a:hover {
 }
 
 .right {
-  text-align: right;
-  float: right;
+  text-align: right!important;
+  float: right!important;
 }
 
 .row {
@@ -80,16 +80,28 @@ a:hover {
   width: 33.33%;
 }
 
+.col-md5 {
+  display: block;
+  float: left;
+  width: 41.66%;
+}
+
 .col-md6 {
   display: block;
   float: left;
   width: 50%;
 }
 
+.col-md8 {
+  display: block;
+  float: left;
+  width: 66.66%;
+}
+
 .game-setup-input {}
 
 .gm-button {
-  padding: 10px 20px;
+  padding: 6px 10px;
   font-size: 16px;
   text-align: center;
   cursor: pointer;
@@ -97,19 +109,17 @@ a:hover {
   color: #fff;
   background-color: #04AA6D;
   border: none;
-  border-radius: 15px;
-  box-shadow: 0 9px #bbb;
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin: none;
 }
 
 .gm-button:hover {
   background-color: #3e8e41;
-  box-shadow: 0 9px #777;
 }
 
 .gm-button:active {
   background-color: #3e8e41;
-  box-shadow: 0 5px #555;
-  transform: translateY(4px);
 }
 
 :disabled.gm-button,
@@ -117,5 +127,4 @@ a:hover {
 :disabled.gm-button:active {
   cursor: not-allowed;
   background-color: #b9b7b6;
-  box-shadow: none;
 }
