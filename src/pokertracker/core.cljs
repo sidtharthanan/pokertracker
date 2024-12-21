@@ -19,6 +19,8 @@
 
 (println (.get url-search-params "abc"))
 
+(defonce interval (r/atom nil))
+
 (defonce gbl-state (r/atom (ls-read :gbl-state defaults/default-state)))
 (println @gbl-state)
 
@@ -26,6 +28,55 @@
 (def reset-gbl-state #(reset! gbl-state defaults/default-state))
 
 (def ls-write-gbl-state! #(ls-write :gbl-state @gbl-state))
+
+(defn- calc []
+  (let [{:keys [chipset no-of-players start-blind blind-multiplier
+                est-game-hours]} @gbl-state
+        tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
+                     {:denom denom
+                      :color color
+                      :qty qty
+                      :total-val (* denom qty)
+                      :qty-per-player qty-per-player
+                      :val-per-player (* denom qty-per-player)
+                      :qty-used (* no-of-players qty-per-player)
+                      :qty-left (- qty (* no-of-players qty-per-player))
+                      :val-left (* denom (- qty (* no-of-players qty-per-player)))}) chipset)
+        tdata-total (->> [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]
+                         (map (fn [k] [k (reduce + (map k tdata))]))
+                         (into {}))
+        levels-needed (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0))))
+        est-blind-mins (/ (* est-game-hours 60) levels-needed)]
+    {:tdata tdata
+     :tdata-total tdata-total
+     :levels-needed levels-needed
+     :est-blind-mins est-blind-mins}))
+
+(defn- run-time-loop! []
+  (let [{:keys [current-small-blind game-state game-start]} @gbl-state
+        {:keys [est-blind-mins]} (calc)
+        anony (fn []
+                (let [c-level (math/floor (/ (- (js/Date.) game-start) 60000 est-blind-mins))]
+                  (update-gbl-state-in! [:current-level] c-level)))]
+    (when-not (nil? @interval) (.clearInterval js/window @interval))
+    (reset! interval (.setInterval js/window anony 5000))))
+
+(defn- kill-time-loop! []
+  (when-not (nil? @interval) (.clearInterval js/window @interval)))
+
+(defn- gm-start []
+  (update-gbl-state-in! [:game-state] :started)
+  (update-gbl-state-in! [:game-start] (js/Date.))
+  (ls-write-gbl-state!)
+  (run-time-loop!))
+(defn- gm-pause []
+  (update-gbl-state-in! [:game-state] :paused)
+  (ls-write-gbl-state!))
+(defn- gm-end []
+  (update-gbl-state-in! [:game-state] :ended)
+  (update-gbl-state-in! [:game-start] nil)
+  (kill-time-loop!)
+  (ls-write-gbl-state!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,36 +146,23 @@
          (td qty-left)
          (td val-left)])]]))
 
-(defn- gm-start []
-  (update-gbl-state-in! [:game-state] :started)
-  (ls-write-gbl-state!))
-(defn- gm-pause []
-  (update-gbl-state-in! [:game-state] :paused)
-  (ls-write-gbl-state!))
-(defn- gm-end []
-  (update-gbl-state-in! [:game-state] :ended)
-  (ls-write-gbl-state!))
-
 (defn home-page []
-  (let [{:keys [chipset no-of-players start-blind blind-multiplier est-game-hours game-state]} @gbl-state
-        tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
-                     {:denom denom
-                      :color color
-                      :qty qty
-                      :total-val (* denom qty)
-                      :qty-per-player qty-per-player
-                      :val-per-player (* denom qty-per-player)
-                      :qty-used (* no-of-players qty-per-player)
-                      :qty-left (- qty (* no-of-players qty-per-player))
-                      :val-left (* denom (- qty (* no-of-players qty-per-player)))}) chipset)
-        tdata-total (->> [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]
-                         (map (fn [k] [k (reduce + (map k tdata))]))
-                         (into {}))
-        levels-needed (math/ceil (/ (math/log (/ (:val-per-player tdata-total) 2 start-blind)) (math/log (inc (/ blind-multiplier 100.0)))))
-        est-blind-mins (math/ceil (/ (* est-game-hours 60) levels-needed))
-        game-running (contains? #{:started :paused} (keyword game-state))]
+  (let [{:keys [no-of-players start-blind blind-multiplier
+                est-game-hours game-state game-start
+                current-small-blind current-level]} @gbl-state
+        {:keys [tdata tdata-total levels-needed est-blind-mins]} (calc)
+        game-running (contains? #{:started :paused} (keyword game-state))
+        started-at (when-not (nil? game-start) (str (.getHours game-start) ":" (.getMinutes game-start)))]
     [:div
-     [:h3 "Poker game tracker!"]
+     [:div.row
+      [:div.col-md6
+       [:div.row [:span {:style {:font-size "1.5em" :font-weight "bold"}} "Poker game tracker! "]]
+       [:div.row [:span {:style {:font-size "0.8em" :font-weight "bold"}} "Started at " started-at]]]
+      [:div.col-md6 [:div.row
+                     [:div.col-md4.right
+                      [:span {:style {:font-size "1.5em" :font-weight "bold"}} (str "Small Blind " current-small-blind)]]
+                     [:div.col-md6.right
+                      [:span {:style {:font-size "1.5em" :font-weight "bold"}} (str "Level " current-level)]]]]]
 
      [:div.row {:style {:margin 15 :width 400}}
       [:div.col-md4>button.gm-button
@@ -151,15 +189,15 @@
         [:div.row
          [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
          [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
-                                                                        :min 25
+                                                                        :min 5
                                                                         :step 5
-                                                                        :max 100})]]
+                                                                        :max 300})]]
         [:div.row
          [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
          [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
         [:div.row
          [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
-         [:div.col-md6>span#levels-needed levels-needed]]
+         [:div.col-md6>span#levels-needed (math/ceil levels-needed)]]
         [:div.row
          [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
          [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
@@ -168,9 +206,10 @@
                                                                     :max 4.00})]]
         [:div.row
          [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
-         [:div.col-md6>span#est-blind-mins est-blind-mins]]])]))
+         [:div.col-md6>span#est-blind-mins (math/ceil est-blind-mins)]]])]))
 
 (defn mount-root []
+  (run-time-loop!)
   (rdom/render [home-page] (js/document.getElementById "app")))
 
 (defn ^:export init! []

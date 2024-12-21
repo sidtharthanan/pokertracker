@@ -5,7 +5,8 @@
                                        {:denom 10 :color "green" :qty 40  :qty-per-player 4}
                                        {:denom 25 :color "blue" :qty 40  :qty-per-player 3}
                                        {:denom 50 :color "black" :qty 40  :qty-per-player 2}]
-                             
+
+                             :game-start nil
                              :game-state 0
                              :est-game-hours 2
                              :no-of-players 4
