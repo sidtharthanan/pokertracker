@@ -52,12 +52,23 @@
      :levels-needed levels-needed
      :est-blind-mins est-blind-mins}))
 
+(defn- blind-calc [starting-blind blind-level blind-multiplier]
+  (if (>= 1 blind-level) starting-blind
+      (let [new-blind (* starting-blind (inc (/ blind-multiplier 100)))
+            rnd-new-blind (cond (< new-blind 8.5) (math/round new-blind)
+                                (< new-blind 50)  (* (math/round (/ new-blind 5)) 5)
+                                (< new-blind 500)  (* (math/round (/ new-blind 10)) 10)
+                                (< new-blind 1000)  (* (math/round (/ new-blind 50)) 50)
+                                :else (* (math/round (/ new-blind 100)) 100))]
+        (blind-calc rnd-new-blind (dec blind-level) blind-multiplier))))
+
 (defn- run-time-loop! []
-  (let [{:keys [current-small-blind game-state game-start]} @gbl-state
+  (let [{:keys [start-blind blind-multiplier game-start]} @gbl-state
         {:keys [est-blind-mins]} (calc)
         anony (fn []
-                (let [c-level (math/floor (/ (- (js/Date.) game-start) 60000 est-blind-mins))]
-                  (update-gbl-state-in! [:current-level] c-level)))]
+                (let [current-level (math/ceil (/ (- (js/Date.) game-start) 60000 est-blind-mins))]
+                  (update-gbl-state-in! [:current-level] current-level)
+                  (update-gbl-state-in! [:current-small-blind] (blind-calc start-blind current-level blind-multiplier))))]
     (when-not (nil? @interval) (.clearInterval js/window @interval))
     (reset! interval (.setInterval js/window anony 5000))))
 
@@ -209,7 +220,6 @@
          [:div.col-md6>span#est-blind-mins (math/ceil est-blind-mins)]]])]))
 
 (defn mount-root []
-  (run-time-loop!)
   (rdom/render [home-page] (js/document.getElementById "app")))
 
 (defn ^:export init! []
