@@ -1,0 +1,130 @@
+body {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  /* max-width: 600px; */
+  margin: 10;
+  -webkit-font-smoothing: antialiased;
+  font-size: 1.125em;
+  color: #333;
+  line-height: 1.5em;
+}
+
+h1,
+h2,
+h3 {
+  color: #000;
+}
+
+h1 {
+  font-size: 2.5em
+}
+
+h2 {
+  font-size: 2em
+}
+
+h3 {
+  font-size: 1.5em
+}
+
+a {
+  text-decoration: none;
+  color: #09f;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.config-table-cell {
+  border: 1px solid black;
+}
+
+.config-table-input {
+  width: 100%;
+  font-size: 1em;
+  background-color: inherit;
+  color: inherit;
+  border: none;
+}
+
+.config-table-input::-webkit-inner-spin-button,
+.config-table-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.config-table-input:focus {
+  outline: none;
+}
+
+.right {
+  text-align: right!important;
+  float: right!important;
+}
+
+.row {
+  display: block;
+  float: left;
+  width: 100%;
+}
+
+.col-md3 {
+  display: block;
+  float: left;
+  width: 25%;
+}
+
+.col-md4 {
+  display: block;
+  float: left;
+  width: 33.33%;
+}
+
+.col-md5 {
+  display: block;
+  float: left;
+  width: 41.66%;
+}
+
+.col-md6 {
+  display: block;
+  float: left;
+  width: 50%;
+}
+
+.col-md8 {
+  display: block;
+  float: left;
+  width: 66.66%;
+}
+
+.game-setup-input {}
+
+.gm-button {
+  padding: 6px 10px;
+  font-size: 16px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  color: #fff;
+  background-color: #04AA6D;
+  border: none;
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin: none;
+}
+
+.gm-button:hover {
+  background-color: #3e8e41;
+}
+
+.gm-button:active {
+  background-color: #3e8e41;
+}
+
+:disabled.gm-button,
+:disabled.gm-button:hover,
+:disabled.gm-button:active {
+  cursor: not-allowed;
+  background-color: #b9b7b6;
+}
