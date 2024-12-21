@@ -70,6 +70,7 @@
                   (update-gbl-state-in! [:current-level] current-level)
                   (update-gbl-state-in! [:current-small-blind] (blind-calc start-blind current-level blind-multiplier))))]
     (when-not (nil? @interval) (.clearInterval js/window @interval))
+    (anony)
     (reset! interval (.setInterval js/window anony 5000))))
 
 (defn- kill-time-loop! []
@@ -103,8 +104,6 @@
                     :on-change #(on-change (-> %1 (.-target) (.-value) int))
                     :style {:width "100%"}}
                    attrs)])))
-
-;; fmt #(-> % float (/ 5) math/round (* 5))
 
 (defn num-input
   ([location val] (num-input location val {}))
@@ -195,8 +194,8 @@
 
 (defn- ranking-info []
   [:div.row
-   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "/img/f1.png" :width "100%" :height "100%"}]]
-   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "/img/f2.png" :width "100%" :height "100%"}]]])
+   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "./img/f1.png" :width "100%" :height "100%"}]]
+   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "./img/f2.png" :width "100%" :height "100%"}]]])
 
 (defn home-page []
   (let [{:keys [no-of-players start-blind blind-multiplier
