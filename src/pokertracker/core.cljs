@@ -15,6 +15,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defonce url-search-params (js/URLSearchParams. (.. js/window -location -search)))
+
+(println (.get url-search-params "abc"))
+
 (defonce gbl-state (r/atom (ls-read :gbl-state defaults/default-state)))
 (println @gbl-state)
 
@@ -51,6 +55,60 @@
                     :style {:width "100%"}}
                    attrs)])))
 
+(defn- game-setup-table [tdata tdata-total]
+  (let [th (partial vector :th.config-table-cell)
+        td (partial vector :td.config-table-cell)]
+    [:table {:style {:width 900 :border "1px solid black"}}
+     [:thead
+      [:tr
+       (th {:style {:width "5%"}} "Denom")
+       (th {:style {:width "10%"}} "Qty")
+       (th {:style {:width "15%"}} "Qty / Player")
+       (th {:style {:width "5%" :border "none"}})
+       (th "Starting Stack")
+       (th "Chip Value")
+       (th "Qty Used")
+       (th "Qty Left")
+       (th "Value Left")]]
+     [:tbody
+      (map-indexed (fn [index {:keys [:color :denom :total-val :val-per-player :qty-used :qty-left :val-left :qty :qty-per-player]}]
+                     [:tr {:key [:chipset index] :style {:background color :color "white"}}
+                      (td  denom)
+                      (td  (int-input [:chipset index :qty] qty {:class "config-table-input"}))
+                      (td  (int-input [:chipset index :qty-per-player] qty-per-player {:class "config-table-input"}))
+                      (td {:style {:border "none"}})
+                      (td val-per-player)
+                      (td total-val)
+                      (td qty-used)
+                      (td qty-left)
+                      (td val-left)]) tdata)]
+     [:tfoot
+      (let [{:keys [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]} tdata-total]
+        [:tr
+         (td {:style {:font-weight "bold"}} "Total")
+         (td qty)
+         (td qty-per-player)
+         (td {:style {:border "none"}})
+         (td val-per-player)
+         (td total-val)
+         (td qty-used)
+         (td qty-left)
+         (td val-left)])]]))
+
+(defn- can-edit-config? []
+  (let [{game-state :game-state} @gbl-state]
+    (cond (= game-state 0) true ;; not started
+          (= game-state 1) false ;; started
+          (= game-state 2) false ;; started and paused
+          (= game-state 3) true))) ;; ended
+
+(defn- gm-start []
+  )
+(defn- gm-pause []
+  )
+(defn- gm-end []
+  )
+
 (defn home-page []
   (let [{:keys [chipset no-of-players start-blind blind-multiplier est-game-hours]} @gbl-state
         tdata (map (fn [{:keys [:denom :color :qty :qty-per-player]}]
@@ -70,76 +128,46 @@
         est-blind-mins (math/ceil (/ (* est-game-hours 60) levels-needed))]
     [:div
      [:h3 "Poker game tracker!"]
-     (let [th (partial vector :th.config-table-cell)
-           td (partial vector :td.config-table-cell)]
-       [:table {:style {:width 900 :border "1px solid black"}}
-        [:thead
-         [:tr
-          (th {:style {:width "5%"}} "Denom")
-          (th {:style {:width "10%"}} "Qty")
-          (th {:style {:width "15%"}} "Qty / Player")
-          (th {:style {:width "5%" :border "none"}})
-          (th "Starting Stack")
-          (th "Chip Value")
-          (th "Qty Used")
-          (th "Qty Left")
-          (th "Value Left")]]
-        [:tbody
-         (map-indexed (fn [index {:keys [:color :denom :total-val :val-per-player :qty-used :qty-left :val-left :qty :qty-per-player]}]
-                        [:tr {:key [:chipset index] :style {:background color :color "white"}}
-                         (td  denom)
-                         (td  (int-input [:chipset index :qty] qty {:class "config-table-input"}))
-                         (td  (int-input [:chipset index :qty-per-player] qty-per-player {:class "config-table-input"}))
-                         (td {:style {:border "none"}})
-                         (td val-per-player)
-                         (td total-val)
-                         (td qty-used)
-                         (td qty-left)
-                         (td val-left)]) tdata)]
-        [:tfoot
-         (let [{:keys [:qty :qty-per-player :val-per-player :total-val :qty-used :qty-left :val-left]} tdata-total]
-           [:tr
-            (td {:style {:font-weight "bold"}} "Total")
-            (td qty)
-            (td qty-per-player)
-            (td {:style {:border "none"}})
-            (td val-per-player)
-            (td total-val)
-            (td qty-used)
-            (td qty-left)
-            (td val-left)])]])
-     [:form {:style {:margin-top 10 :width 400} :disabled true}
+
+     [:div.row {:style {:margin 15}}
+      [:div.row {:style {:width 400}}
+       [:div.col-md4>button.gm-button {:style {:background "#00ff00"} :on-click gm-start} "START"]
+       [:div.col-md4>button.gm-button {:style {:background "#4285f4"} :on-click gm-pause} "PAUSE"]
+       [:div.col-md4>button.gm-button {:style {:background "#ff0000"} :on-click gm-end} "END"]
+       ]]
+
+     (when (can-edit-config?) (game-setup-table tdata tdata-total))
+     [:form {:style {:margin-top 10 :width 400}}
       [:div.row
-       [:div.col-md5 [:label {:for :no-of-players} "No of Players"]]
-       [:div.col-md5 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
+       [:div.col-md6 [:label {:for :no-of-players} "No of Players"]]
+       [:div.col-md6 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
                                                                 :min 2
                                                                 :step 1
                                                                 :max 10})]]
       [:div.row
-       [:div.col-md5 [:label {:for :start-blind} "Starting SB"]]
-       [:div.col-md5 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
+       [:div.col-md6 [:label {:for :start-blind} "Starting SB"]]
+       [:div.col-md6 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
       [:div.row
-       [:div.col-md5 [:label {:for :blind-multiplier} "SB Inc percentage"]]
-       [:div.col-md5 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
+       [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
+       [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
                                                                       :min 25
                                                                       :step 5
                                                                       :max 100})]]
       [:div.row
-       [:div.col-md5 [:label {:for :starting-stack} "Starting Stack"]]
-       [:div.col-md5>span#starting-stack (:val-per-player tdata-total)]]
+       [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
+       [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
       [:div.row
-       [:div.col-md5 [:label {:for :levels-needed} "Levels Needed"]]
-       [:div.col-md5>span#levels-needed levels-needed]]
+       [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
+       [:div.col-md6>span#levels-needed levels-needed]]
       [:div.row
-       [:div.col-md5 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
-       [:div.col-md5 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
+       [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
+       [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
                                                                   :min 0.75
                                                                   :step 0.25
                                                                   :max 4.00})]]
       [:div.row
-       [:div.col-md5 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
-       [:div.col-md5>span#est-blind-mins est-blind-mins]]
-      [:button {:type "submit" :on-click persist-gbl-state} "Save locally"]]]))
+       [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
+       [:div.col-md6>span#est-blind-mins est-blind-mins]]]]))
 
 (defn mount-root []
   (rdom/render [home-page] (js/document.getElementById "app")))

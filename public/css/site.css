@@ -63,12 +63,46 @@ a:hover {
   width: 100%;
 }
 
-.col-md5 {
+.col-md3 {
+  display: block;
+  float: left;
+  width: 25%;
+}
+
+.col-md4 {
+  display: block;
+  float: left;
+  width: 33.33%;
+}
+
+.col-md6 {
   display: block;
   float: left;
   width: 50%;
 }
 
-.game-setup-input {
+.game-setup-input {}
 
+.gm-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  color: #fff;
+  background-color: #04AA6D;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #bbb;
+}
+
+.gm-button:hover {
+  background-color: #3e8e41;
+  box-shadow: 0 9px #777;
+}
+
+.gm-button:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #555;
+  transform: translateY(4px);
 }
