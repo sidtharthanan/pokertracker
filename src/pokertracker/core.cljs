@@ -157,6 +157,47 @@
          (td qty-left)
          (td val-left)])]]))
 
+(defn- game-setup-form []
+  (let [{:keys [no-of-players start-blind blind-multiplier
+                est-game-hours]} @gbl-state
+        {:keys [tdata-total levels-needed est-blind-mins]} (calc)]
+    [:div.row {:style {:margin-top 10 :width 400}}
+     [:div.row
+      [:div.col-md6 [:label {:for :no-of-players} "No of Players"]]
+      [:div.col-md6 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
+                                                               :min 2
+                                                               :step 1
+                                                               :max 10})]]
+     [:div.row
+      [:div.col-md6 [:label {:for :start-blind} "Starting SB"]]
+      [:div.col-md6 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
+     [:div.row
+      [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
+      [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
+                                                                     :min 5
+                                                                     :step 5
+                                                                     :max 300})]]
+     [:div.row
+      [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
+      [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
+     [:div.row
+      [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
+      [:div.col-md6>span#levels-needed (math/ceil levels-needed)]]
+     [:div.row
+      [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
+      [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
+                                                                 :min 0.75
+                                                                 :step 0.25
+                                                                 :max 4.00})]]
+     [:div.row
+      [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
+      [:div.col-md6>span#est-blind-mins (math/ceil est-blind-mins)]]]))
+
+(defn- ranking-info []
+  [:div.row
+   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "/img/f1.png" :width "100%" :height "100%"}]]
+   [:div.col-md5 {:style {:padding "5px 10px"}} [:img {:src "/img/f2.png" :width "100%" :height "100%"}]]])
+
 (defn home-page []
   (let [{:keys [no-of-players start-blind blind-multiplier
                 est-game-hours game-state game-start
@@ -185,42 +226,12 @@
                       [:span {:style {:font-size 14 :font-weight "bold"}} "Level "]
                       [:span {:style {:font-size 26 :font-weight "bold"}} current-level]]]]]
 
-
-
      (when-not game-running
        [:div.row (game-setup-table tdata tdata-total)])
      (when-not game-running
-       [:div.row {:style {:margin-top 10 :width 400}}
-        [:div.row
-         [:div.col-md6 [:label {:for :no-of-players} "No of Players"]]
-         [:div.col-md6 (int-input [:no-of-players] no-of-players {:class "game-setup-input"
-                                                                  :min 2
-                                                                  :step 1
-                                                                  :max 10})]]
-        [:div.row
-         [:div.col-md6 [:label {:for :start-blind} "Starting SB"]]
-         [:div.col-md6 (int-input [:start-blind] start-blind {:class "game-setup-input"})]]
-        [:div.row
-         [:div.col-md6 [:label {:for :blind-multiplier} "SB Inc percentage"]]
-         [:div.col-md6 (num-input [:blind-multiplier] blind-multiplier {:class "game-setup-input"
-                                                                        :min 5
-                                                                        :step 5
-                                                                        :max 300})]]
-        [:div.row
-         [:div.col-md6 [:label {:for :starting-stack} "Starting Stack"]]
-         [:div.col-md6>span#starting-stack (:val-per-player tdata-total)]]
-        [:div.row
-         [:div.col-md6 [:label {:for :levels-needed} "Levels Needed"]]
-         [:div.col-md6>span#levels-needed (math/ceil levels-needed)]]
-        [:div.row
-         [:div.col-md6 [:label {:for :est-game-hours} "Est Game Time (hours)"]]
-         [:div.col-md6 (num-input [:est-game-hours] est-game-hours {:class "game-setup-input"
-                                                                    :min 0.75
-                                                                    :step 0.25
-                                                                    :max 4.00})]]
-        [:div.row
-         [:div.col-md6 [:label {:for :est-blind-mins} "Est Blind Time (mins)"]]
-         [:div.col-md6>span#est-blind-mins (math/ceil est-blind-mins)]]])]))
+       (game-setup-form))
+     (when game-running
+       (ranking-info))]))
 
 (defn mount-root []
   (rdom/render [home-page] (js/document.getElementById "app")))
